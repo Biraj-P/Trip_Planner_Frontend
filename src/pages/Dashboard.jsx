@@ -2,6 +2,17 @@ import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 
 export default function Dashboard() {
+    // State for editing a trip
+    const [editTripId, setEditTripId] = useState(null);
+    const [editForm, setEditForm] = useState({
+      destination: "",
+      budget: "",
+      startDate: "",
+      endDate: "",
+      femaleAllowed: true,
+      maleCount: 0,
+      femaleCount: 0
+    });
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [trips, setTrips] = useState([]);
@@ -116,6 +127,11 @@ export default function Dashboard() {
 
   const handleCreateTrip = e => {
     e.preventDefault();
+    // Validation for maleCount and femaleCount
+    if (form.maleCount < 0 || form.femaleCount < 0) {
+      alert("Male Count and Female Count cannot be negative.");
+      return;
+    }
     axios.post("http://localhost:8080/api/trips/create", { ...form }, { withCredentials: true })
       .then(() => {
         setShowForm(false);
@@ -189,9 +205,58 @@ export default function Dashboard() {
               {trip.startDate} to {trip.endDate} ({calculateDays()} days) <br />
               Male: {trip.maleCount}, Female: {trip.femaleCount} <br />
               Status: {trip.status}
+              <button style={{marginLeft: '10px'}} onClick={() => {
+                setEditTripId(trip.id);
+                setEditForm({
+                  destination: trip.destination || "",
+                  budget: trip.budget || "",
+                  startDate: trip.startDate || "",
+                  endDate: trip.endDate || "",
+                  femaleAllowed: trip.femaleAllowed ?? true,
+                  maleCount: trip.maleCount || 0,
+                  femaleCount: trip.femaleCount || 0
+                });
+              }}>Edit</button>
             </li>
           ))}
         </ul>
+            {/* Edit Trip Modal */}
+            {editTripId && (
+              <div className="trip-form-modal">
+                <form onSubmit={e => {
+                  e.preventDefault();
+                  // Validation for maleCount and femaleCount
+                  if (editForm.maleCount < 0 || editForm.femaleCount < 0) {
+                    alert("Male Count and Female Count cannot be negative.");
+                    return;
+                  }
+                  axios.put(`http://localhost:8080/api/trips/${editTripId}/update`, editForm, { withCredentials: true })
+                    .then(() => {
+                      setEditTripId(null);
+                      axios.get("http://localhost:8080/api/trips/my", { withCredentials: true })
+                        .then(res => setTrips(res.data));
+                    });
+                }}>
+                  <h2>Edit Trip</h2>
+                  <input name="destination" placeholder="Destination" value={editForm.destination} onChange={e => setEditForm(f => ({ ...f, destination: e.target.value }))} required />
+                  <input name="budget" type="number" min="0" placeholder="Budget (₹)" value={editForm.budget} onChange={e => setEditForm(f => ({ ...f, budget: e.target.value }))} required />
+                  <label>Start Date:
+                    <input name="startDate" type="date" value={editForm.startDate} onChange={e => setEditForm(f => ({ ...f, startDate: e.target.value }))} required />
+                  </label>
+                  <label>End Date:
+                    <input name="endDate" type="date" value={editForm.endDate} onChange={e => setEditForm(f => ({ ...f, endDate: e.target.value }))} required />
+                  </label>
+                  <label>
+                    <input type="checkbox" name="femaleAllowed" checked={editForm.femaleAllowed} onChange={e => setEditForm(f => ({ ...f, femaleAllowed: e.target.checked }))} />
+                    Female Allowed
+                  </label>
+                  <input name="maleCount" type="number" min="0" placeholder="Male Count" value={editForm.maleCount} onChange={e => setEditForm(f => ({ ...f, maleCount: e.target.value }))} />
+                  <input name="femaleCount" type="number" min="0" placeholder="Female Count" value={editForm.femaleCount} onChange={e => setEditForm(f => ({ ...f, femaleCount: e.target.value }))} />
+                  <button type="submit">Save</button>
+                  <button type="button" onClick={() => setEditTripId(null)}>Cancel</button>
+                </form>
+              </div>
+            )}
       </div>
 
       {/* Create Trip Modal */}
@@ -212,8 +277,8 @@ export default function Dashboard() {
               <input type="checkbox" name="femaleAllowed" checked={form.femaleAllowed} onChange={handleFormChange} />
               Female Allowed
             </label>
-            <input name="maleCount" type="number" placeholder="Male Count" value={form.maleCount} onChange={handleFormChange} />
-            <input name="femaleCount" type="number" placeholder="Female Count" value={form.femaleCount} onChange={handleFormChange} />
+            <input name="maleCount" type="number" min="0" placeholder="Male Count" value={form.maleCount} onChange={handleFormChange} />
+            <input name="femaleCount" type="number" min="0" placeholder="Female Count" value={form.femaleCount} onChange={handleFormChange} />
             <button type="submit">Create</button>
             <button type="button" onClick={() => setShowForm(false)}>Cancel</button>
           </form>
