@@ -230,7 +230,22 @@ export default function Dashboard() {
                     alert("Male Count and Female Count cannot be negative.");
                     return;
                   }
-                  axios.put(`http://localhost:8080/api/trips/${editTripId}/update`, editForm, { withCredentials: true })
+                  // Format dates to 'yyyy-MM-dd'
+                  const formatDate = (dateStr) => {
+                    if (!dateStr) return "";
+                    // If already yyyy-MM-dd, return as is
+                    if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) return dateStr;
+                    // Otherwise, try to parse and format
+                    const d = new Date(dateStr);
+                    if (isNaN(d)) return dateStr;
+                    return d.toISOString().slice(0, 10);
+                  };
+                  const payload = {
+                    ...editForm,
+                    startDate: formatDate(editForm.startDate),
+                    endDate: formatDate(editForm.endDate)
+                  };
+                  axios.put(`http://localhost:8080/api/trips/${editTripId}/update`, payload, { withCredentials: true })
                     .then(() => {
                       setEditTripId(null);
                       axios.get("http://localhost:8080/api/trips/my", { withCredentials: true })
