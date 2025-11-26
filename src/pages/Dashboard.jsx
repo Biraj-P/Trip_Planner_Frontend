@@ -41,6 +41,7 @@ export default function Dashboard() {
     college: "",
     course: "",
     graduationYear: "",
+    location: "",
     bio: ""
   });
   // State to control profile edit modal
@@ -73,6 +74,7 @@ export default function Dashboard() {
           college: res.data.college || "",
           course: res.data.course || "",
           graduationYear: res.data.graduationYear || "",
+          location: res.data.location || "",
           bio: res.data.bio || ""
         });
       })
@@ -120,9 +122,9 @@ export default function Dashboard() {
   // NEW: Submit profile update
   const handleProfileSubmit = e => {
     e.preventDefault();
-    const { age, gender, phoneNumber, college, course, graduationYear, bio } = profileForm;
+    const { age, gender, phoneNumber, college, course, graduationYear, location, bio } = profileForm;
     axios.put('http://localhost:8080/api/user/profile', {
-      age, gender, phoneNumber, college, course, graduationYear, bio
+      age, gender, phoneNumber, college, course, graduationYear, location, bio
     }, {
       withCredentials: true
     })
@@ -355,6 +357,7 @@ export default function Dashboard() {
             <p><strong>College:</strong> {profileForm.college}</p>
             <p><strong>Course:</strong> {profileForm.course}</p>
             <p><strong>Graduation Year:</strong> {profileForm.graduationYear}</p>
+            <p><strong>Location:</strong> {profileForm.location}</p>
             <p><strong>Bio:</strong> {profileForm.bio}</p>
             <div className="profile-form-buttons">
               <button type="button" onClick={handleOpenProfileEditModal}>Update Profile</button>
@@ -410,6 +413,12 @@ export default function Dashboard() {
               type="number"
               placeholder="Graduation Year"
               value={profileForm.graduationYear}
+              onChange={handleProfileFormChange}
+            />
+            <input
+              name="location"
+              placeholder="Location"
+              value={profileForm.location}
               onChange={handleProfileFormChange}
             />
             <textarea
