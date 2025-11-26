@@ -39,6 +39,8 @@ export default function Dashboard() {
     graduationYear: "",
     bio: ""
   });
+  // State to control profile edit modal
+  const [showProfileEditModal, setShowProfileEditModal] = useState(false);
 
   useEffect(() => {
     // Fetch basic user info
@@ -94,20 +96,35 @@ export default function Dashboard() {
   };
 
   // NEW: Handle profile form changes
+  // NEW: Handle profile form changes
   const handleProfileFormChange = e => {
     const { name, value } = e.target;
     setProfileForm(f => ({ ...f, [name]: value }));
   };
 
+  // Toggle edit mode for profile
+  // Open profile edit modal
+  const handleOpenProfileEditModal = () => {
+    setShowProfileEditModal(true);
+  };
+
+  // Close profile edit modal
+  const handleCloseProfileEditModal = () => {
+    setShowProfileEditModal(false);
+  };
+
   // NEW: Submit profile update
   const handleProfileSubmit = e => {
     e.preventDefault();
-    axios.put('http://localhost:8080/api/user/profile', profileForm, {
+    const { age, gender, phoneNumber, college, course, graduationYear, bio } = profileForm;
+    axios.put('http://localhost:8080/api/user/profile', {
+      age, gender, phoneNumber, college, course, graduationYear, bio
+    }, {
       withCredentials: true
     })
       .then((res) => {
         setProfile(res.data);
-        setShowProfileModal(false);
+        setShowProfileEditModal(false);
         alert('Profile updated successfully!');
       })
       .catch((err) => {
@@ -300,12 +317,11 @@ export default function Dashboard() {
         </div>
       )}
 
-      {/* NEW: Profile Modal */}
-      {showProfileModal && (
+      {/* NEW: Profile Modal (View) */}
+      {showProfileModal && !showProfileEditModal && (
         <div className="trip-form-modal profile-modal">
-          <form onSubmit={handleProfileSubmit} className="profile-form">
+          <div className="profile-form">
             <h2>Personal Details</h2>
-            
             {/* Profile Picture Display */}
             <div className="profile-picture-display">
               {user?.picture ? (
@@ -316,14 +332,32 @@ export default function Dashboard() {
                 </div>
               )}
             </div>
-
             {/* Non-editable fields */}
             <div className="profile-info-static">
               <p><strong>Name:</strong> {profile?.name}</p>
               <p><strong>Email:</strong> {profile?.email}</p>
             </div>
+            {/* Display profile details */}
+            <p><strong>Age:</strong> {profileForm.age}</p>
+            <p><strong>Gender:</strong> {profileForm.gender}</p>
+            <p><strong>Phone Number:</strong> {profileForm.phoneNumber}</p>
+            <p><strong>College:</strong> {profileForm.college}</p>
+            <p><strong>Course:</strong> {profileForm.course}</p>
+            <p><strong>Graduation Year:</strong> {profileForm.graduationYear}</p>
+            <p><strong>Bio:</strong> {profileForm.bio}</p>
+            <div className="profile-form-buttons">
+              <button type="button" onClick={handleOpenProfileEditModal}>Update Profile</button>
+              <button type="button" onClick={() => setShowProfileModal(false)}>Close</button>
+            </div>
+          </div>
+        </div>
+      )}
 
-            {/* Editable fields */}
+      {/* Profile Edit Modal */}
+      {showProfileModal && showProfileEditModal && (
+        <div className="trip-form-modal profile-modal">
+          <form onSubmit={handleProfileSubmit} className="profile-form">
+            <h2>Edit Profile</h2>
             <input
               name="age"
               type="number"
@@ -331,7 +365,6 @@ export default function Dashboard() {
               value={profileForm.age}
               onChange={handleProfileFormChange}
             />
-
             <select
               name="gender"
               value={profileForm.gender}
@@ -342,7 +375,6 @@ export default function Dashboard() {
               <option value="Female">Female</option>
               <option value="Other">Other</option>
             </select>
-
             <input
               name="phoneNumber"
               type="tel"
@@ -350,21 +382,18 @@ export default function Dashboard() {
               value={profileForm.phoneNumber}
               onChange={handleProfileFormChange}
             />
-
             <input
               name="college"
               placeholder="College Name"
               value={profileForm.college}
               onChange={handleProfileFormChange}
             />
-
             <input
               name="course"
               placeholder="Course (e.g., B.Tech CS)"
               value={profileForm.course}
               onChange={handleProfileFormChange}
             />
-
             <input
               name="graduationYear"
               type="number"
@@ -372,7 +401,6 @@ export default function Dashboard() {
               value={profileForm.graduationYear}
               onChange={handleProfileFormChange}
             />
-
             <textarea
               name="bio"
               placeholder="Bio (optional)"
@@ -380,10 +408,9 @@ export default function Dashboard() {
               onChange={handleProfileFormChange}
               rows="3"
             />
-
             <div className="profile-form-buttons">
               <button type="submit">Save Profile</button>
-              <button type="button" onClick={() => setShowProfileModal(false)}>Cancel</button>
+              <button type="button" onClick={handleCloseProfileEditModal}>Cancel</button>
             </div>
           </form>
         </div>
