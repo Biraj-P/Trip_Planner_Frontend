@@ -80,13 +80,13 @@ export default function TripDetails() {
                     
                     <div className="details-grid">
                         <div className="detail-item">
-                            <p className="detail-label">📅 Dates</p>
+                            <p className="detail-label">Dates</p>
                             <p className="detail-value">
                                 {formatDate(trip.startDate)} - {formatDate(trip.endDate)}
                             </p>
                         </div>
                         <div className="detail-item">
-                            <p className="detail-label">💰 Budget</p>
+                            <p className="detail-label">Budget</p>
                             <p className="detail-value">₹{trip.budget} per person</p>
                         </div>
                         <div className="detail-item">
@@ -96,7 +96,7 @@ export default function TripDetails() {
                             </p>
                         </div>
                         <div className="detail-item">
-                            <p className="detail-label">📝 Status</p>
+                            <p className="detail-label">Status</p>
                             <span className={getStatusClass(trip.status)}>{trip.status}</span>
                         </div>
                     </div>
@@ -131,7 +131,7 @@ export default function TripDetails() {
                                     disabled={generating}
                                     className="btn-generate"
                                 >
-                                    {generating ? '⏳ Generating...' : '✓ Generate'}
+                                    {generating ? 'Generating...' : '✓ Generate'}
                                 </button>
                                 <button onClick={() => setShowItineraryBox(false)} className="btn-cancel">
                                     Cancel
@@ -144,7 +144,7 @@ export default function TripDetails() {
                         <div>
                             <div className="itinerary-display">{trip.itinerary}</div>
                             <button onClick={() => setShowItineraryBox(true)} className="btn-regenerate">
-                                🔄 Regenerate Itinerary
+                                Regenerate Itinerary
                             </button>
                         </div>
                     )}
