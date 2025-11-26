@@ -46,6 +46,10 @@ export default function Dashboard() {
   });
   // State to control profile edit modal
   const [showProfileEditModal, setShowProfileEditModal] = useState(false);
+  // State for location picker
+  const [showLocationPicker, setShowLocationPicker] = useState(false);
+  const [mapsLoaded, setMapsLoaded] = useState(false);
+  const [selectedLatLng, setSelectedLatLng] = useState(null);
 
   useEffect(() => {
     // Fetch basic user info
@@ -54,10 +58,10 @@ export default function Dashboard() {
         setUser(res.data);
         setLoading(false);
       })
-      .catch((err) => {
-        setLoading(false);
-        window.location.href = '/';
-      });
+      .catch(() => {
+          setLoading(false);
+          window.location.href = '/';
+        });
 
     // Fetch user trips
     axios.get('http://localhost:8080/api/trips/my', { withCredentials: true })
@@ -137,6 +141,109 @@ export default function Dashboard() {
         console.error('Error updating profile:', err);
         alert('Failed to update profile');
       });
+  };
+
+  // Load Google Maps JS dynamically
+  const loadGoogleMapsScript = () => {
+    return new Promise((resolve, reject) => {
+      if (typeof window.google === 'object' && typeof window.google.maps === 'object') {
+        setMapsLoaded(true);
+        return resolve(window.google);
+      }
+      const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY || '';
+      if (!apiKey) {
+        return reject(new Error('Google Maps API key not found. Set VITE_GOOGLE_MAPS_API_KEY in .env'));
+      }
+      const script = document.createElement('script');
+      script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&libraries=places`;
+      script.async = true;
+      script.defer = true;
+      script.onload = () => {
+        setMapsLoaded(true);
+        resolve(window.google);
+      };
+      script.onerror = (err) => reject(err);
+      document.head.appendChild(script);
+    });
+  };
+
+  // Open map picker modal and init map
+  const openLocationPicker = async () => {
+    try {
+      await loadGoogleMapsScript();
+      setShowLocationPicker(true);
+      // small timeout to allow modal render
+      setTimeout(() => {
+        if (window.google && document.getElementById('profile-map')) {
+          const map = new window.google.maps.Map(document.getElementById('profile-map'), {
+            center: { lat: 22.5600, lng: 88.3700 }, // default (Durgapur-ish)
+            zoom: 6
+          });
+          const geocoder = new window.google.maps.Geocoder();
+          let marker = null;
+          map.addListener('click', (e) => {
+            const latlng = { lat: e.latLng.lat(), lng: e.latLng.lng() };
+            if (marker) marker.setMap(null);
+            marker = new window.google.maps.Marker({ position: latlng, map });
+            setSelectedLatLng(latlng);
+            geocoder.geocode({ location: latlng }, (results, status) => {
+              if (status === 'OK' && results[0]) {
+                setProfileForm(f => ({ ...f, location: results[0].formatted_address }));
+              }
+            });
+          });
+          // If a location already selected, place marker
+          if (profileForm.location) {
+            // try to geocode the address to position marker
+            geocoder.geocode({ address: profileForm.location }, (results, status) => {
+              if (status === 'OK' && results[0]) {
+                map.setCenter(results[0].geometry.location);
+                map.setZoom(12);
+                marker = new window.google.maps.Marker({ position: results[0].geometry.location, map });
+                setSelectedLatLng({ lat: results[0].geometry.location.lat(), lng: results[0].geometry.location.lng() });
+              }
+            });
+          }
+        }
+      }, 200);
+    } catch (err) {
+      console.error('Failed to load Google Maps', err);
+      alert('Failed to load Google Maps. Make sure VITE_GOOGLE_MAPS_API_KEY is set.');
+    }
+  };
+
+  const closeLocationPicker = () => {
+    setShowLocationPicker(false);
+  };
+
+  // Use device geolocation and reverse geocode
+  const useMyLocation = async () => {
+    try {
+      await loadGoogleMapsScript();
+      if (!navigator.geolocation) {
+        alert('Geolocation not supported by your browser');
+        return;
+      }
+      navigator.geolocation.getCurrentPosition(async (pos) => {
+        const latlng = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+        const geocoder = new window.google.maps.Geocoder();
+        geocoder.geocode({ location: latlng }, (results, status) => {
+          if (status === 'OK' && results[0]) {
+            setProfileForm(f => ({ ...f, location: results[0].formatted_address }));
+            setSelectedLatLng(latlng);
+            alert('Location set to: ' + results[0].formatted_address);
+          } else {
+            alert('Could not determine address for your location');
+          }
+        });
+      }, (err) => {
+        console.error(err);
+        alert('Unable to retrieve your location');
+      });
+    } catch (err) {
+      console.error(err);
+      alert('Failed to load Google Maps API. Add VITE_GOOGLE_MAPS_API_KEY in .env');
+    }
   };
 
   const calculateDays = () => {
@@ -361,6 +468,7 @@ export default function Dashboard() {
             <p><strong>Bio:</strong> {profileForm.bio}</p>
             <div className="profile-form-buttons">
               <button type="button" onClick={handleOpenProfileEditModal}>Update Profile</button>
+              <button type="button" onClick={useMyLocation}>Use My Location</button>
               <button type="button" onClick={() => setShowProfileModal(false)}>Close</button>
             </div>
           </div>
@@ -421,6 +529,10 @@ export default function Dashboard() {
               value={profileForm.location}
               onChange={handleProfileFormChange}
             />
+            <div style={{ display: 'flex', gap: '8px', marginTop: '6px' }}>
+              <button type="button" onClick={openLocationPicker}>Pick on Map</button>
+              <button type="button" onClick={useMyLocation}>Use My Location</button>
+            </div>
             <textarea
               name="bio"
               placeholder="Bio (optional)"
@@ -433,6 +545,19 @@ export default function Dashboard() {
               <button type="button" onClick={handleCloseProfileEditModal}>Cancel</button>
             </div>
           </form>
+        </div>
+      )}
+      {/* Location Picker Modal */}
+      {showLocationPicker && (
+        <div className="trip-form-modal profile-modal">
+          <div className="profile-form">
+            <h2>Select Location</h2>
+            <div id="profile-map" style={{ width: '100%', height: '400px', marginBottom: '12px' }} />
+            <div style={{ display: 'flex', gap: '8px' }}>
+              <button type="button" onClick={() => { setShowLocationPicker(false); }}>Done</button>
+              <button type="button" onClick={() => { setProfileForm(f => ({ ...f, location: '' })); setShowLocationPicker(false); }}>Clear</button>
+            </div>
+          </div>
         </div>
       )}
     </div>
