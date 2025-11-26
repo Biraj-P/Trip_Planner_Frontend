@@ -1,4 +1,6 @@
 import React, { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+
 import axios from 'axios';
 
 export default function Dashboard() {
@@ -28,6 +30,8 @@ export default function Dashboard() {
     maleCount: 0,
     femaleCount: 0
   });
+  const navigate = useNavigate();
+
 
   // NEW: Profile form state
   const [profileForm, setProfileForm] = useState({
@@ -217,6 +221,13 @@ export default function Dashboard() {
                   femaleCount: trip.femaleCount || 0
                 });
               }}>Edit</button>
+              <button
+    onClick={() => navigate(`/trip/${trip.id}`)}
+    className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+>
+    View Details & Itinerary
+</button>
+
             </li>
           ))}
         </ul>
